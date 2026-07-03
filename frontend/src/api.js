@@ -1,6 +1,4 @@
-// In development, Vite proxies /api → localhost:8000
-// In production (GitHub Pages), VITE_API_URL must point to the Render backend
-const API_BASE = import.meta.env.VITE_API_URL || '/api'
+const API_BASE = import.meta.env.VITE_API_URL || 'https://ai-reporting-tool-backend.onrender.com'
 
 async function handle(res, fallback) {
   if (!res.ok) {
