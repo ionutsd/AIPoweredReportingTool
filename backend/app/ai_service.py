@@ -5,8 +5,23 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+_client = None
 MODEL = "llama-3.3-70b-versatile"
+
+
+def _get_client():
+    """Return the Groq client, creating it on first call.
+
+    This avoids the client being instantiated at import time before
+    environment variables are available (e.g. on Render).
+    """
+    global _client
+    if _client is None:
+        api_key = os.environ.get("GROQ_API_KEY")
+        if not api_key:
+            raise RuntimeError("GROQ_API_KEY environment variable is not set")
+        _client = Groq(api_key=api_key)
+    return _client
 
 
 def _clean_json(text: str) -> str:
@@ -41,7 +56,7 @@ Rules:
 - next_steps: 4-5 items, genuinely specific to THIS dataset
 - No generic filler, no jargon
 - Return ONLY valid JSON"""
-    r = client.chat.completions.create(model=MODEL, max_tokens=900,
+    r = _get_client().chat.completions.create(model=MODEL, max_tokens=900,
         messages=[{"role": "user", "content": prompt}])
     return json.loads(_clean_json(r.choices[0].message.content))
 
@@ -131,7 +146,7 @@ result = df.groupby('AgeGroup')['Quantity_Sold'].sum().reset_index()
 Return ONLY the Python code. No explanation, no markdown fences, no imports.
 ════════════════════════════════════════"""
 
-    r = client.chat.completions.create(model=MODEL, max_tokens=600,
+    r = _get_client().chat.completions.create(model=MODEL, max_tokens=600,
         messages=[{"role": "user", "content": prompt}])
     return _clean_json(r.choices[0].message.content)
 
@@ -164,7 +179,7 @@ Respond ONLY with a JSON object (no markdown):
 }}
 Use only column names that exist in the schema above."""
 
-    r = client.chat.completions.create(model=MODEL, max_tokens=350,
+    r = _get_client().chat.completions.create(model=MODEL, max_tokens=350,
         messages=[{"role": "user", "content": prompt}])
     return json.loads(_clean_json(r.choices[0].message.content))
 
@@ -189,7 +204,7 @@ Respond ONLY with a JSON array:
 ]
 Use only key names that actually appear in the result sample."""
 
-    r = client.chat.completions.create(model=MODEL, max_tokens=500,
+    r = _get_client().chat.completions.create(model=MODEL, max_tokens=500,
         messages=[{"role": "user", "content": prompt}])
     return json.loads(_clean_json(r.choices[0].message.content))
 
@@ -222,7 +237,7 @@ Respond ONLY with a JSON object:
   "reasoning": "<one sentence explaining why these two columns match>"
 }}"""
 
-    r = client.chat.completions.create(model=MODEL, max_tokens=220,
+    r = _get_client().chat.completions.create(model=MODEL, max_tokens=220,
         messages=[{"role": "user", "content": prompt}])
     return json.loads(_clean_json(r.choices[0].message.content))
 
@@ -278,6 +293,6 @@ Rules:
 - Write for a business stakeholder, not a data scientist — avoid technical jargon
 - Return ONLY valid JSON"""
 
-    r = client.chat.completions.create(model=MODEL, max_tokens=1100,
+    r = _get_client().chat.completions.create(model=MODEL, max_tokens=1100,
         messages=[{"role": "user", "content": prompt}])
     return json.loads(_clean_json(r.choices[0].message.content))
